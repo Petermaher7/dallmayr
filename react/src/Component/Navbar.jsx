@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './Style.css';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 
 function Navbar() {
@@ -15,8 +14,6 @@ function Navbar() {
   const [delayTime, setDelayTime] = useState(null);
   const [extraTime, setExtraTime] = useState(null);
   const navigate = useNavigate();
-
-  // قائمة الأماكن والإحداثيات الخاصة بها
   const locationsData = {
     "ابوت": { lat: 30.017944, lng: 31.424389 },
     "مابي": { lat: 30.016889, lng: 31.413944 },
@@ -64,8 +61,8 @@ function Navbar() {
 
   const validateLocation = async () => {
     if (!location || location.trim() === '') {
-      setErrorMessage("your location is false");
-      return;
+      setErrorMessage("Please select a location");
+      return false; 
     }
 
     if (locationsData[location]) {
@@ -75,31 +72,38 @@ function Navbar() {
         const distance = getDistance(userCoords.latitude, userCoords.longitude, lat, lng);
         if (distance < 100) {
           setIsMatch(true);
-          setErrorMessage(' your location is true');
+          setErrorMessage('Your location is valid');
+          return true; 
         } else {
           setIsMatch(false);
-          setErrorMessage(' your location is false');
+          setErrorMessage('Your location is invalid');
+          return false; 
         }
       }
     } else {
       setErrorMessage("The selected location is not valid or not in the list.");
+      return false; 
     }
   };
 
   const getDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // نصف قطر الأرض بالكيلومتر
+    const R = 6371; 
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c * 1000; // المسافة بالأمتار
+    const distance = R * c * 1000; 
     return distance;
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+
+    const locationIsValid = await validateLocation(); 
+    if (!locationIsValid) return; 
+
     const currentTime = Date.now();
     setLoginTime(currentTime);
     setIsLoggedIn(true);
@@ -206,6 +210,21 @@ function Navbar() {
             <p style={{ color: 'red' }}>{errorMessage}</p>
           </div>
         )}
+
+        {isLoggedIn && loginTime && (
+          <div>
+            <p>وقت الدخول: {new Date(loginTime).toLocaleTimeString()}</p>
+          </div>
+        )}
+        {logoutTime && (
+          <div>
+            <p>وقت الخروج: {logoutTime}</p>
+            {delayTime !== null && (
+              <p>الوقت الإضافي: {extraTime / 1000} ثواني</p>
+            )}
+          </div>
+        )}
+
         <Link className='m-3' to="/admin">Admin</Link>
       </div>
     </div>
