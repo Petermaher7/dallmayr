@@ -9,19 +9,38 @@ function Navbar() {
   const [isMatch, setIsMatch] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [userCoords, setUserCoords] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
-  const [loginTime, setLoginTime] = useState(null); 
-  const [logoutTime, setLogoutTime] = useState(null); 
-  const [delayTime, setDelayTime] = useState(null); 
-  const [extraTime, setExtraTime] = useState(null); 
-  const navigate = useNavigate(); 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginTime, setLoginTime] = useState(null);
+  const [logoutTime, setLogoutTime] = useState(null);
+  const [delayTime, setDelayTime] = useState(null);
+  const [extraTime, setExtraTime] = useState(null);
+  const navigate = useNavigate();
+
+  // قائمة الأماكن والإحداثيات الخاصة بها
+  const locationsData = {
+    "ابوت": { lat: 30.017944, lng: 31.424389 },
+    "مابي": { lat: 30.016889, lng: 31.413944 },
+    "بكير": { lat: 30.025833, lng: 31.478806 },
+    "ليفين سكوير": { lat: 30.046194, lng: 31.485389 },
+    "فيوز": { lat: 30.027750, lng: 31.483083 },
+    "ادرس": { lat: 30.025750, lng: 31.493555 },
+    "الفطيم التجمع": { lat: 30.017694, lng: 31.497250 },
+    "امازون السويس": { lat: 30.087278, lng: 31.461944 },
+    "امازون العاشر": { lat: 30.227056, lng: 31.720833 },
+    "الفطيم ستي سنتر": { lat: 30.080000, lng: 31.366667 },
+    "كابيتال اكتوبر": { lat: 30.024472, lng: 31.013861 },
+    "بسكو مصر اكتوبر": { lat: 29.925111, lng: 30.890833 },
+    "انبي": { lat: 30.044083, lng: 31.340278 },
+    "المقر": { lat: 29.980528, lng: 31.309000 },
+    "المختبر القريه الذكيه": { lat: 30.078222, lng: 31.012583 }
+  };
 
   useEffect(() => {
     if (loginTime) {
-      const timeElapsed = Date.now() - loginTime; 
-      const eightHoursInMillis = 8 * 60 * 60 * 1000; 
+      const timeElapsed = Date.now() - loginTime;
+      const eightHoursInMillis = 8 * 60 * 60 * 1000;
       if (timeElapsed >= eightHoursInMillis) {
-        setIsLoggedIn(false); 
+        setIsLoggedIn(false);
       }
     }
   }, [loginTime]);
@@ -44,81 +63,72 @@ function Navbar() {
   };
 
   const validateLocation = async () => {
-    const apiKey = 'e6ecd471587742109864f469a9378040';
-    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${apiKey}`;
+    if (!location || location.trim() === '') {
+      setErrorMessage("your location is false");
+      return;
+    }
 
-    try {
-      const response = await axios.get(geocodeUrl);
-      const data = response.data;
+    if (locationsData[location]) {
+      const { lat, lng } = locationsData[location];
 
-      if (data.status === 'OK') {
-        const locationData = data.results[0];
-        const { lat, lng } = locationData.geometry.location;
-
-        if (userCoords) {
-          const distance = getDistance(userCoords.latitude, userCoords.longitude, lat, lng);
-          if (distance < 100) {
-            setIsMatch(true);
-            setErrorMessage('your location is true');
-          } else {
-            setIsMatch(false);
-            setErrorMessage('your location is false');
-          }
+      if (userCoords) {
+        const distance = getDistance(userCoords.latitude, userCoords.longitude, lat, lng);
+        if (distance < 100) {
+          setIsMatch(true);
+          setErrorMessage(' your location is true');
         } else {
-          setErrorMessage("لا يمكن التحقق من الموقع الفعلي حتى يتم الحصول عليه.");
+          setIsMatch(false);
+          setErrorMessage(' your location is false');
         }
-      } else {
-        setIsMatch(false);
-        setErrorMessage('your location is false');
       }
-    } catch (error) {
-      setErrorMessage('حدث خطأ أثناء الاتصال بـ Google Maps API.');
+    } else {
+      setErrorMessage("The selected location is not valid or not in the list.");
     }
   };
 
   const getDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
+    const R = 6371; // نصف قطر الأرض بالكيلومتر
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c * 1000; 
+    const distance = R * c * 1000; // المسافة بالأمتار
     return distance;
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
     const currentTime = Date.now();
-    setLoginTime(currentTime); 
-    setIsLoggedIn(true); 
+    setLoginTime(currentTime);
+    setIsLoggedIn(true);
     navigate('/cart', { state: { location, currentTime: new Date().toLocaleTimeString() } });
   };
 
   const handleLogout = () => {
     const currentLogoutTime = new Date().toLocaleTimeString();
-    setLogoutTime(currentLogoutTime); 
+    setLogoutTime(currentLogoutTime);
 
     const loginTimeMillis = new Date(loginTime).getTime();
     const logoutTimeMillis = new Date().getTime();
 
     const timeDifference = logoutTimeMillis - loginTimeMillis;
-    const eightHoursInMillis = 8 * 60 * 60 * 1000; 
+    const eightHoursInMillis = 8 * 60 * 60 * 1000;
 
     let calculatedDelay = 0;
     let calculatedExtraTime = 0;
 
     if (timeDifference > eightHoursInMillis) {
-      calculatedDelay = timeDifference - eightHoursInMillis; 
-      calculatedExtraTime = calculatedDelay; 
+      calculatedDelay = timeDifference - eightHoursInMillis;
+      calculatedExtraTime = calculatedDelay;
     }
 
     setDelayTime(calculatedDelay);
     setExtraTime(calculatedExtraTime);
 
-    setIsLoggedIn(false); 
-    setLoginTime(null); 
+    setIsLoggedIn(false);
+    setLoginTime(null);
 
     navigate('/cart', {
       state: { location, attendance: new Date(loginTime).toLocaleTimeString(), departure: currentLogoutTime, delay: calculatedDelay, extraTime: calculatedExtraTime }
@@ -164,24 +174,21 @@ function Navbar() {
           }}
         >
           <option>Location</option>
-          <option>المختبر</option>
-          <option>ستي سنتر الماظه</option>
-          <option> ابوت التجمع</option>
-          <option> امازون العاشر من رمضان</option>
+          <option>ابوت</option>
+          <option>مابي</option>
+          <option>بكير</option>
+          <option>ليفين سكوير</option>
+          <option>فيوز</option>
+          <option>ادرس</option>
+          <option>الفطيم التجمع</option>
           <option>امازون السويس</option>
-          <option> التجمع</option>
-          <option>  كابيتال اكتوبر</option>
-          <option>  بسكو مصر اكتوبر</option>
-          <option> ليفين اسكوير التجمع</option>
-          <option>فيوز التجمع </option>
-          <option>  المقر</option>
+          <option>امازون العاشر</option>
+          <option>الفطيم ستي سنتر</option>
+          <option>كابيتال اكتوبر</option>
+          <option>بسكو مصر اكتوبر</option>
           <option>انبي</option>
-          <option>ليله القدر</option>
-          <option disabled>امازون</option>
-          <option>طريق السويس</option>
-          <option>العاشر من رمضان</option>
-          <option disabled>المعادي</option>
           <option>المقر</option>
+          <option>المختبر القريه الذكيه</option>
         </select>
         <button type="submit">Login</button>
 
